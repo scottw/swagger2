@@ -149,9 +149,11 @@ sub dispatch_to_swagger {
   for my $p (@{$op_info->{spec}{parameters} || []}) {
     my $name  = $p->{name};
     my $value = $data->{params}{$name} // $p->{default};
-    my @e     = $self->_validate_input_value($p, $name => $value);
-    $input->{$name} = $value unless @e;
-    push @errors, @e;
+    if (defined $value or Swagger2::_is_true($p->{required})) {
+        my @e     = $self->_validate_input_value($p, $name => $value);
+        $input->{$name} = $value unless @e;
+        push @errors, @e;
+    }
   }
 
   return $c->$reply({errors => \@errors}, 400) if @errors;
@@ -483,9 +485,11 @@ sub _validate_input {
       }
     }
 
-    my @e = $self->_validate_input_value($p, $name => $value);
-    $input{$name} = $value unless @e;
-    push @errors, @e;
+    if (defined $value or Swagger2::_is_true($p->{required})) {
+        my @e = $self->_validate_input_value($p, $name => $value);
+        $input{$name} = $value unless @e;
+        push @errors, @e;
+    }
   }
 
   return {errors => \@errors}, \%input;
